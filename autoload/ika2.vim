@@ -29,11 +29,11 @@ function! s:load_schedule() abort
   return schedule
 endfunction
 
-function! s:fetch_schedule_for_rule(unixtime, rule, schedule) abort
-  for v in a:schedule.result[a:rule]
+function! s:fetch_schedule_for_rule(unixtime, type, schedule) abort
+  for v in a:schedule.result[a:type]
     if v.start_t <= a:unixtime && a:unixtime <= v.end_t
       return v
-    end
+    endif
   endfor
   throw s:ERR_SCHEDULE_NOT_FOUND
 endfunction
@@ -47,6 +47,34 @@ function! s:_fetfch_schedule_for(unixtime) abort
   let res.league = s:fetch_schedule_for_rule(a:unixtime, 'league', schedule)
 
   return res
+endfunction
+
+function! s:_fetch_next_rule(type, rule_key) abort
+  let schedule = s:load_schedule()
+  let now = s:DateTime.now().unix_time()
+
+  for v in schedule.result[a:type]
+    if v.end_t < now
+      continue
+    endif
+
+    if v.rule_ex.key == a:rule_key
+      return v
+    endif
+  endfor
+endfunction
+
+function! ika2#next_rule(type, rule_key) abort
+  if filereadable(s:CACHE_FILE)
+    try
+      return s:_fetch_next_rule(a:type, a:rule_key)
+    catch /Schedule not found/
+      " do nothing
+    endtry
+  endif
+
+  call s:fetch_schedule_from_api()
+  return s:_fetch_next_rule(a:type, a:rule_key)
 endfunction
 
 function! ika2#stage_for(unixtime) abort
@@ -91,6 +119,21 @@ endfunction
 
 function! ika2#print_next() abort
   call ika2#print_for(s:DateTime.now().unix_time() + 2 * 60 * 60)
+endfunction
+
+function! ika2#print_next_rule(type, rule_key) abort
+  let s = ika2#next_rule(a:type, a:rule_key)
+  let start = s:DateTime.from_unix_time(s.start_t).format('%m月%d日 %R')
+  if a:type == 'gachi'
+    let type_name = 'ガチマッチ'
+  else
+    let type_name = 'リーグマッチ'
+  endif
+
+  echo printf("次の%s(%s)は%sからですよ！", s.rule_ex.name, type_name, start)
+  for m in s.maps_ex
+    echo "  " . m.name
+  endfor
 endfunction
 
 let &cpo = s:save_cpo
