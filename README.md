@@ -23,3 +23,12 @@ Check when the specified rule will open.
   * `Ika2NextRainL`
   * `Ika2NextClamL`
   * `Ika2NextTowerL`
+
+
+
+Note
+---
+
+This plugin is NOT related to Nintendo Co., Ltd.
+
+It uses an unofficial API. https://spla2.yuu26.com/
