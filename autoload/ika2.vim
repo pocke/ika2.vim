@@ -62,6 +62,8 @@ function! s:_fetch_next_rule(type, rule_key) abort
       return v
     endif
   endfor
+
+  throw s:ERR_SCHEDULE_NOT_FOUND
 endfunction
 
 function! ika2#next_rule(type, rule_key) abort
